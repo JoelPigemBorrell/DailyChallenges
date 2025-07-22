@@ -34,6 +34,7 @@ const ChallengesScreen = () => {
   const [maxPoints, setMaxPoints] = useState(0);
   const [maxLevel, setMaxLevel] = useState(1);
   const [medals, setMedals] = useState([]);
+  const [showConfettiModal, setShowConfettiModal] = useState(false);
   const confettiRef = useRef(null);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -118,11 +119,16 @@ const ChallengesScreen = () => {
   );
   
   const previousLevelRef = useRef(level);
+  const isFirstLoadRef = useRef(true);
 
   useEffect(() => {
-    if (level > previousLevelRef.current) {
-      setShowLevelUp(true);
-      setTimeout(() => setShowLevelUp(false), 2500);
+    if (isFirstLoadRef.current) {
+      isFirstLoadRef.current = false;
+    } else {
+      if (level > previousLevelRef.current) {
+        setShowLevelUp(true);
+        setTimeout(() => setShowLevelUp(false), 2500);
+      }
     }
     previousLevelRef.current = level;
   }, [level]);
@@ -195,6 +201,12 @@ const ChallengesScreen = () => {
 
               await loadChallenges();
 
+              if (updatedChallenge.completed) {
+                setShowConfettiModal(true);
+                confettiRef.current?.reset();
+                confettiRef.current?.play();
+              }
+
               if (updatedChallenge.completed && confettiRef.current) {
                 confettiRef.current.reset();
                 confettiRef.current.play();
@@ -250,7 +262,7 @@ const ChallengesScreen = () => {
       <RNModal transparent visible={isUpdating}>
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#36a2c1" />
-          <Text style={{ marginTop: 12, color: '#36a2c1', fontWeight: '600' }}>Actualizando reto...</Text>
+          <Text style={{ marginTop: 12, color: '#36a2c1', fontWeight: '600' }}>Completando...</Text>
         </View>
       </RNModal>
 
@@ -307,20 +319,51 @@ const ChallengesScreen = () => {
 
 
       <Portal>
-        <Modal visible={infoVisible} onDismiss={() => setInfoVisible(false)} contentContainerStyle={[styles.modal, isDark && styles.modalDark]}>
-          <Text style={[{ fontSize: 16, marginBottom: 8 }, isDark && styles.textLight]}>
-            Puedes completar retos presionando el botón "Completar" en cada tarjeta. Cada reto completado suma 100 puntos. Cada 500 puntos subes de nivel. Cuando completes uno, se te asignará otro automáticamente para mantener 5 activos cada día.
+        <Modal
+          visible={infoVisible}
+          onDismiss={() => setInfoVisible(false)}
+          contentContainerStyle={[
+            styles.infoModalContainer,
+            isDark,
+          ]}
+        >
+          <Icon name="information" size={40} color={isDark ? '#36a2c1' : '#5da456'} style={{ marginBottom: 12 }} />
+          <Text style={[styles.infoModalTitle, isDark && { color: '#fafafb' }]}>
+            ¿Cómo funciona?
           </Text>
+          <Text style={[styles.infoModalText, isDark && { color: '#ccc' }]}>
+            Presiona “Completar” en cada reto para sumar 100 puntos. Al alcanzar 500 puntos, subes de nivel automáticamente.
+            Siempre tendrás 5 retos activos al día. ¡Sigue completando para desbloquear nuevos niveles y medallas!
+          </Text>
+          <TouchableOpacity
+            onPress={() => setInfoVisible(false)}
+            style={styles.infoCloseButton}
+          >
+            <Text style={styles.infoCloseButtonText}>Entendido</Text>
+          </TouchableOpacity>
         </Modal>
       </Portal>
 
-      <LottieView
-        ref={confettiRef}
-        source={require('../../../assets/animations/confetti.json')}
-        autoPlay={false}
-        loop={false}
-        style={styles.confetti}
-      />
+      {showConfettiModal && (
+        <View style={styles.fullscreenOverlay}>
+          <LottieView
+            ref={confettiRef}
+            source={require('../../../assets/animations/confetti.json')}
+            autoPlay
+            loop={false}
+            style={StyleSheet.absoluteFill}
+            onAnimationFinish={() => {
+              setTimeout(() => {
+                setShowConfettiModal(false);
+              }, 1000);
+            }}
+          />
+        </View>
+      )}
+
+
+
+
 
       <FlatList
         contentContainerStyle={styles.flatListContent}
@@ -381,7 +424,6 @@ const styles = StyleSheet.create({
   },
   flatListContent: {
     paddingBottom: 60,
-    paddingTop: 25, 
   },
   containerDark: {
     backgroundColor: '#121212',
@@ -555,13 +597,15 @@ const styles = StyleSheet.create({
   modalDark: {
     backgroundColor: '#333',
   },
-  confetti: {
+  fullscreenOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 250,
-    zIndex: 20,
+    bottom: 0,
+    zIndex: 9999,
+    elevation: 9999, 
+    pointerEvents: 'none',
   },
   loadingOverlay: {
     flex: 1,
@@ -572,6 +616,49 @@ const styles = StyleSheet.create({
   animatedCard: {
     marginBottom: 12,
   },
+  infoModalContainer: {
+    marginHorizontal: 24,
+    backgroundColor: "white",
+    padding: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  infoModalLight: {
+    backgroundColor: '#ffffff',
+  },
+  infoModalDark: {
+    backgroundColor: '#1e1e1e',
+  },
+  infoModalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#333',
+    marginBottom: 12,
+  },
+  infoModalText: {
+    fontSize: 15,
+    color: '#444',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  infoCloseButton: {
+    backgroundColor: '#36a2c1',
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    borderRadius: 28,
+  },
+  infoCloseButtonText: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+
 });
 
 export default ChallengesScreen;

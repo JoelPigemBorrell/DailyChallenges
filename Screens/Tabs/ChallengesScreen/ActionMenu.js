@@ -41,7 +41,7 @@ const ActionMenu = ({ isDark, onReload, onViewCompleted, onInfo }) => {
       <IconButton
         icon={open ? "close" : "menu"}
         size={28}
-        iconColor={textColor}
+        iconColor={bgColor}
         onPress={toggleMenu}
         style={styles.mainButton}
         accessibilityLabel="Abrir menú de acciones"
