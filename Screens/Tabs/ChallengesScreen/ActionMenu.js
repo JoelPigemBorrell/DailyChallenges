@@ -1,6 +1,17 @@
 import React, { useState, useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet, Text, Animated, Easing } from 'react-native';
-import { IconButton, useTheme } from 'react-native-paper';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Text,
+  Animated,
+  Easing,
+  TouchableWithoutFeedback,
+  Dimensions,
+} from 'react-native';
+import { IconButton } from 'react-native-paper';
+
+const screenHeight = Dimensions.get('window').height;
 
 const ActionMenu = ({ isDark, onReload, onViewCompleted, onInfo }) => {
   const [open, setOpen] = useState(false);
@@ -25,76 +36,81 @@ const ActionMenu = ({ isDark, onReload, onViewCompleted, onInfo }) => {
     }
   };
 
-  // Animaciones: opacidad y translateY para que baje el menú
+  const closeMenu = () => {
+    if (open) toggleMenu();
+  };
+
   const opacity = anim;
   const translateY = anim.interpolate({
     inputRange: [0, 1],
     outputRange: [-20, 0],
   });
 
-  // Colores para modo oscuro o claro
-  const bgColor = isDark ? 'rgba(30,30,30,0.9)' : 'rgba(255,255,255,0.95)';
+  const bgColor = isDark ? 'rgba(30,30,30,0.95)' : 'rgba(255,255,255,0.95)';
   const textColor = isDark ? '#ddd' : '#333';
 
   return (
     <View style={styles.menuContainer}>
       <IconButton
-        icon={open ? "close" : "menu"}
+        icon={open ? 'close' : 'menu'}
         size={28}
-        iconColor={bgColor}
+        iconColor="#fff"
         onPress={toggleMenu}
         style={styles.mainButton}
-        accessibilityLabel="Abrir menú de acciones"
       />
 
       {open && (
-        <Animated.View
-          style={[
-            styles.dropdown,
-            {
-              backgroundColor: bgColor,
-              opacity,
-              transform: [{ translateY }],
-              shadowColor: isDark ? '#000' : '#aaa',
-            },
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.actionItem}
-            onPress={() => {
-              toggleMenu();
-              onReload();
-            }}
-            activeOpacity={0.7}
-          >
-            <IconButton icon="refresh" size={24} iconColor={textColor} />
-            <Text style={[styles.actionText, { color: textColor }]}>Recargar</Text>
-          </TouchableOpacity>
+        <>
+          {/* Capa transparente para detectar toques fuera */}
+          <TouchableWithoutFeedback onPress={closeMenu}>
+            <View style={styles.backdrop} />
+          </TouchableWithoutFeedback>
 
-          <TouchableOpacity
-            style={styles.actionItem}
-            onPress={() => {
-              toggleMenu();
-              onViewCompleted();
-            }}
-            activeOpacity={0.7}
+          <Animated.View
+            style={[
+              styles.dropdown,
+              {
+                backgroundColor: bgColor,
+                opacity,
+                transform: [{ translateY }],
+                shadowColor: isDark ? '#000' : '#aaa',
+              },
+            ]}
           >
-            <IconButton icon="check-circle-outline" size={24} iconColor={textColor} />
-            <Text style={[styles.actionText, { color: textColor }]}>Completados</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => {
+                toggleMenu();
+                onReload();
+              }}
+            >
+              <IconButton icon="refresh" size={24} iconColor={textColor} />
+              <Text style={[styles.actionText, { color: textColor }]}>Recargar</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.actionItem}
-            onPress={() => {
-              toggleMenu();
-              onInfo();
-            }}
-            activeOpacity={0.7}
-          >
-            <IconButton icon="information-outline" size={24} iconColor={textColor} />
-            <Text style={[styles.actionText, { color: textColor }]}>Información</Text>
-          </TouchableOpacity>
-        </Animated.View>
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => {
+                toggleMenu();
+                onViewCompleted();
+              }}
+            >
+              <IconButton icon="check-circle-outline" size={24} iconColor={textColor} />
+              <Text style={[styles.actionText, { color: textColor }]}>Completados</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionItem}
+              onPress={() => {
+                toggleMenu();
+                onInfo();
+              }}
+            >
+              <IconButton icon="information-outline" size={24} iconColor={textColor} />
+              <Text style={[styles.actionText, { color: textColor }]}>Información</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </>
       )}
     </View>
   );
@@ -104,10 +120,9 @@ const styles = StyleSheet.create({
   menuContainer: {
     position: 'relative',
     alignItems: 'flex-end',
-    // Puedes poner marginRight si quieres separarlo del borde
+    zIndex: 9999,
   },
   mainButton: {
-    // fondo circular con sombra sutil
     backgroundColor: '#36a2c1',
     elevation: 5,
     shadowColor: '#000',
@@ -115,9 +130,20 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
   },
+  backdrop: {
+    position: 'absolute',
+    top: -1000,
+    left: -1000,
+    right: 1000,
+    bottom: -1000,
+    width: Dimensions.get('window').width * 3,
+    height: Dimensions.get('window').height * 3,
+    backgroundColor: 'transparent',
+    zIndex: 1,
+  },
   dropdown: {
     position: 'absolute',
-    top: 50, // justo debajo del botón
+    top: 50,
     right: 0,
     borderRadius: 8,
     paddingVertical: 8,
@@ -127,6 +153,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     minWidth: 160,
+    zIndex: 2,
   },
   actionItem: {
     flexDirection: 'row',

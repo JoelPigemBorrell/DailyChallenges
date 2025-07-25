@@ -151,26 +151,23 @@ const ProfileScreen = () => {
     </View>
 
     {/* Medallas */}
-    <View style={[styles.card, { paddingBottom: 20 }]}>
-      <Text style={styles.sectionTitle}>🎖 Medallas</Text>
-      {medals.length === 0 ? (
-        <Text style={styles.noMedalsText}>Aún no tienes medallas</Text>
-      ) : (
-        <FlatList
-          data={medals}
-          horizontal
-          keyExtractor={(item, i) => i.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.medalItem}>
-              <Icon name="medal" size={26} color="#fff" />
-              <Text style={styles.medalText}>{item}</Text>
-            </View>
-          )}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingVertical: 10 }}
-        />
+    <FlatList
+      data={medals}
+      horizontal
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <View style={styles.medalItem}>
+          <Icon name="medal" size={26} color="#fff" />
+          <View style={{ marginLeft: 8 }}>
+            <Text style={styles.medalText}>{item.title}</Text>
+            <Text style={styles.medalDesc}>{item.description}</Text>
+          </View>
+        </View>
       )}
-    </View>
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingVertical: 10 }}
+    />
+
 
     {/* Puntos semanales */}
     <View style={styles.card}>
@@ -293,6 +290,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 8,
   },
+  medalDesc: {
+    color: '#fff',
+    fontSize: 12,
+    opacity: 0.9,
+  },
+
   medalItem: {
     backgroundColor: '#36a2c1',
     paddingHorizontal: 14,

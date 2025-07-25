@@ -6,12 +6,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import ChallengesScreen from './Tabs/ChallengesScreen/ChallengesScreen';
-import RankingScreen from './Tabs/RankingScreen';
-import ConfigurationScreen from './Tabs/ConfigurationScreen/ConfigurationScreen';
+import ChallengesScreen from './ChallengesScreen/ChallengesScreen';
+import FriendsAndGroupsScreen from './FriendsAndGroupsScreen/FriendsAndGroupsScreen';
+import ConfigurationScreen from './ConfigurationScreen/ConfigurationScreen';
 
 const Tab = createBottomTabNavigator();
-const logo = require('../assets/logo.png');
+const logo = require('../../assets/logo.png');
 
 export default function HomeScreen() {
    const navigation = useNavigation();
@@ -37,7 +37,7 @@ export default function HomeScreen() {
             let iconName;
 
             if (route.name === 'Challenges') iconName = 'flag-checkered';
-            else if (route.name === 'Ranking') iconName = 'trophy';
+            else if (route.name === 'FriendsAndGroup') iconName = 'trophy';
             else if (route.name === 'Configuration') iconName = 'cog';
 
             return <Icon name={iconName} color={color} size={size} />;
@@ -45,7 +45,7 @@ export default function HomeScreen() {
         })}
       >
         <Tab.Screen name="Challenges" component={ChallengesScreen} />
-        <Tab.Screen name="Ranking" component={RankingScreen} />
+        <Tab.Screen name="FriendsAndGroup" component={FriendsAndGroupsScreen} />
         <Tab.Screen name="Configuration" component={ConfigurationScreen} />
       </Tab.Navigator>
     </SafeAreaView>

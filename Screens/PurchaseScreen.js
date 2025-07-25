@@ -23,15 +23,16 @@ const PurchaseScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.title}>¡Hazte Premium!</Text>
-          <Text style={styles.subtitle}>Desbloquea todo tu potencial</Text>
+          <Text style={styles.title}>🚀 ¡Hazte Premium!</Text>
+          <Text style={styles.subtitle}>Accede a funciones exclusivas para llevar tus hábitos al siguiente nivel</Text>
 
           <View style={styles.featureList}>
-            <Feature icon="star" text="Retos ilimitados cada día" />
-            <Feature icon="medal" text="Medallas exclusivas" />
-            <Feature icon="chart-bar" text="Estadísticas avanzadas" />
-            <Feature icon="palette" text="Temas visuales premium" />
-            <Feature icon="headset" text="Soporte prioritario" />
+            <Feature icon="infinity" text="Retos diarios ilimitados" />
+            <Feature icon="shield-check" text="Sin anuncios molestos" />
+            <Feature icon="chart-line" text="Estadísticas detalladas de tu progreso" />
+            <Feature icon="pencil-ruler" text="Crea tus propios retos personalizados" />
+            <Feature icon="book-open-variant" text="Explora packs temáticos de retos" />
+            <Feature icon="crown" text="Reconocimiento exclusivo para usuarios premium" />
           </View>
 
           <Button
@@ -41,7 +42,7 @@ const PurchaseScreen = ({ navigation }) => {
             labelStyle={styles.buyLabel}
             contentStyle={{ paddingVertical: 8 }}
           >
-            Comprar por 4,99€
+            Comprar por 4,99 €
           </Button>
 
           <Button onPress={() => navigation.goBack()} style={styles.backButton} labelStyle={{ color: '#fff' }}>
@@ -87,13 +88,13 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 10,
-    backdropFilter: 'blur(10px)',
   },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
     textAlign: 'center',
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 16,
@@ -112,6 +113,7 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: 16,
     color: '#fff',
+    flexShrink: 1,
   },
   buyButton: {
     backgroundColor: '#c2ce51',

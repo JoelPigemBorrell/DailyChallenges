@@ -9,7 +9,7 @@ import LoginScreen from './Screens/LoginScreen';
 import RegisterScreen from './Screens/RegisterScreen';
 import PrivacyPolicyScreen from './Screens/Tabs/ConfigurationScreen/ConfigurationPrivacyPolicyScreen';
 import ResetPasswordScreen from './Screens/ResetPasswordScreen';
-import HomeScreen from './Screens/HomeScreen';
+import HomeScreen from './Screens/Tabs/HomeScreen';
 import ChangeEmailScreen from './Screens/Tabs/ConfigurationScreen/ConfigurationChangeEmailScreen';
 import ChangePasswordScreen from './Screens/Tabs/ConfigurationScreen/ConfigurationChangePasswordScreen';
 import HelpScreen from './Screens/Tabs/ConfigurationScreen/ConfigurationHelpScreen';
@@ -17,6 +17,10 @@ import ChallengesDetailScreen from './Screens/Tabs/ChallengesScreen/ChallengesDe
 import ChallengesCompletedScreen from './Screens/Tabs/ChallengesScreen/ChallengesCompletedScreen';
 import ProfileScreen from './Screens/ProfileScreen';
 import PurchaseScreen from './Screens/PurchaseScreen';
+import FriendProfileScreen from './Screens/Tabs/FriendsAndGroupsScreen/Friends/FriendProfileScreen';
+import GroupRankingScreen from './Screens/Tabs/FriendsAndGroupsScreen/Groups/GroupRankingScreen';
+
+
 import subirRetos from './Screens/subirRetos';
 
 
@@ -98,6 +102,16 @@ export default function App() {
             <Stack.Screen
               name="Help"
               component={HelpScreen}
+              options={{ headerShown: true, title: 'Ayuda' }}
+            />
+            <Stack.Screen
+              name="FriendProfile"
+              component={FriendProfileScreen}
+              options={{ headerShown: true, title: 'Ayuda' }}
+            />
+            <Stack.Screen
+              name="GroupRanking"
+              component={GroupRankingScreen}
               options={{ headerShown: true, title: 'Ayuda' }}
             />
            <Stack.Screen name="ChallengesDetail" component={ChallengesDetailScreen} />

@@ -96,6 +96,18 @@ const ChallengesScreen = () => {
 
     // Guarda puntos y nivel actuales en "daily"
     const statsRef = doc(firestore, `users/${userId}/stats`, 'daily');
+    const statsSnap = await getDoc(statsRef);
+
+    if (isFirstLoadRef.current) {
+      isFirstLoadRef.current = false;
+    } else {
+      if (newLevel > previousLevelRef.current) {
+        setShowLevelUp(true);
+        setTimeout(() => setShowLevelUp(false), 2500);
+      }
+    }
+    previousLevelRef.current = newLevel;
+
     await setDoc(statsRef, { points: newPoints, level: newLevel }, { merge: true });
 
     // Ahora actualiza los máximos históricos y carga medallas
@@ -120,7 +132,7 @@ const ChallengesScreen = () => {
   
   const previousLevelRef = useRef(level);
   const isFirstLoadRef = useRef(true);
-
+/*
   useEffect(() => {
     if (isFirstLoadRef.current) {
       isFirstLoadRef.current = false;
@@ -131,7 +143,7 @@ const ChallengesScreen = () => {
       }
     }
     previousLevelRef.current = level;
-  }, [level]);
+  }, [level]);*/
 
     const updateHistoricalStats = async (currentPoints, currentLevel) => {
       if (!userId) return;
@@ -161,18 +173,74 @@ const ChallengesScreen = () => {
           historicalLevel = currentLevel;
           updated = true;
         }
+        const addMedal = (newMedal) => {
+          const exists = historicalMedals.find((m) => m.id === newMedal.id);
+          if (!exists) {
+            historicalMedals.push(newMedal);
+            updated = true;
+          }
+        };
+
+          // Ejemplo: medalla por nivel alcanzado
+          if (currentLevel >= 5) {
+            addMedal({
+              id: 'level_5',
+              title: 'Nivel 5',
+              description: 'Has alcanzado el nivel 5.'
+            });
+          }
+          if (currentLevel >= 10) {
+            addMedal({
+              id: 'level_10',
+              title: 'Nivel 10',
+              description: '¡Impresionante! Nivel 10 desbloqueado.'
+            });
+          }
+
+          // Medalla por completar 5 retos en un día
+          if (currentPoints >= 500) {
+            addMedal({
+              id: '5_challenges',
+              title: '5 Retos Completados',
+              description: 'Has completado 5 retos en un solo día.'
+            });
+          }
+
+         const todayKey = format(new Date(), 'yyyy-MM-dd');
+
+        // Obtener y actualizar puntos semanales
+        let updatedWeeklyPoints = {};
+        if (statsDocSnap.exists()) {
+          const data = statsDocSnap.data();
+          updatedWeeklyPoints = { ...data.weeklyPoints };
+        }
+
+        updatedWeeklyPoints[todayKey] = (updatedWeeklyPoints[todayKey] || 0) + currentPoints;
+
+
+        // Limita solo a los últimos 7 días
+        const allDates = Object.keys(updatedWeeklyPoints);
+        const now = new Date();
+        const filtered = allDates.filter((dateStr) => {
+          const date = new Date(dateStr);
+          const diff = (now - date) / (1000 * 60 * 60 * 24); // días
+          return diff <= 7;
+        });
+        const limitedWeeklyPoints = {};
+        filtered.forEach(date => {
+          limitedWeeklyPoints[date] = updatedWeeklyPoints[date];
+        });
 
         setMaxPoints(historicalPoints);
         setMaxLevel(historicalLevel);
         setMedals(historicalMedals);
 
-        if (updated) {
-          await setDoc(statsDocRef, {
-            maxPoints: historicalPoints,
-            maxLevel: historicalLevel,
-            medals: historicalMedals,
-          }, { merge: true });
-        }
+        await setDoc(statsDocRef, {
+          maxPoints: historicalPoints,
+          maxLevel: historicalLevel,
+          medals: historicalMedals,
+          weeklyPoints: limitedWeeklyPoints,
+        }, { merge: true });
 
       } catch (error) {
         console.error('Error actualizando históricos:', error);
@@ -211,6 +279,7 @@ const ChallengesScreen = () => {
                 confettiRef.current.reset();
                 confettiRef.current.play();
               }
+
             } catch (error) {
               console.error('Error actualizando reto:', error);
             } finally {
