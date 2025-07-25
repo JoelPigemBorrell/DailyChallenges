@@ -1,7 +1,7 @@
 import React from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import FriendsListScreen from './Friends/FriendsListScreen';
-import GroupsScreen from './Groups/GroupsScreen';
+/*import GroupsScreen from './Groups/GroupsScreen';*/
 import { View, Text, StyleSheet } from 'react-native';
 
 const Tab = createMaterialTopTabNavigator();
@@ -17,8 +17,8 @@ const FriendsAndRankingScreen = () => {
           tabBarStyle: { backgroundColor: '#fff' },
         }}
       >
-        <Tab.Screen name="Amigos" component={FriendsListScreen} />
-        <Tab.Screen name="Grupos" component={GroupsScreen} />
+        <Tab.Screen name="Friends" component={FriendsListScreen} />
+     
       </Tab.Navigator>
     </View>
   );

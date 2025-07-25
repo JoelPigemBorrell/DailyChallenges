@@ -1,157 +1,181 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Share } from 'react-native';
-import { Avatar, ActivityIndicator } from 'react-native-paper';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Share,
+  Alert,
+  Linking
+} from 'react-native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import {
+  collection,
+  onSnapshot,
+  doc,
+  setDoc,
+} from 'firebase/firestore';
 import { firestore } from '../../../../firebase';
-import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 
 const FriendsListScreen = () => {
-  const [friends, setFriends] = useState([]);
+  const [friendIds, setFriendIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
 
+  const userId = getAuth().currentUser?.uid;
+
+  // 🔗 Manejar invitaciones por link
   useEffect(() => {
-    const fetchFriends = async () => {
-    const auth = getAuth();
-    const user = auth.currentUser;
+  const handleDeepLink = async (event) => {
+    const url = event.url;
 
-    if (!user) return;
+      const parsed = Linking.parse(url);
+      const invitedBy = parsed.queryParams?.uid;
 
-    const friendData = [];
+      if (invitedBy && userId && invitedBy !== userId) {
+        await addFriend(invitedBy);
+        Alert.alert('Amigo añadido', 'Has añadido a un nuevo amigo automáticamente.');
+      }
+    };
 
+    Linking.addEventListener('url', handleDeepLink);
+    return () => Linking.removeAllListeners('url');
+  }, [userId]);
+
+  // 📩 Invitar amigos por link
+  const shareInviteLink = async () => {
+    if (!userId) return;
+
+    const link = `https://dailychallenges.app/invite?uid=${userId}`;
     try {
-        const userDoc = await getDoc(doc(firestore, 'users', user.uid));
-        const friendIds = userDoc.data()?.friends || [];
-
-        for (const id of friendIds) {
-        try {
-            const friendDoc = await getDoc(doc(firestore, 'users', id));
-            if (friendDoc.exists()) {
-            friendData.push({ id, ...friendDoc.data() });
-            } else {
-            console.warn(`❗ El documento del amigo con ID ${id} no existe.`);
-            }
-        } catch (error) {
-            console.error(`❌ Error al obtener datos del amigo con ID ${id}:`, error.code, error.message);
-        }
-        }
-
-        setFriends(friendData);
+      await Share.share({
+        message: `¡Únete a DailyChallenges y agrégame como amigo! 👇\n${link}`,
+      });
     } catch (error) {
-        console.error('❌ Error al obtener el documento del usuario actual:', error.code, error.message);
-    } finally {
-        setLoading(false);
+      console.error('Error al compartir el enlace', error);
     }
-    };
+  };
 
+  // ➕ Agregar amigo por ID
+  const addFriend = async (friendId) => {
+    if (!userId || friendId === userId) return;
 
-        fetchFriends();
-    }, []);
+    const myFriendRef = doc(firestore, 'users', userId, 'friends', friendId);
+    const theirFriendRef = doc(firestore, 'users', friendId, 'friends', userId);
 
-    const handleShare = async () => {
-        try {
-            const auth = getAuth();
-            const user = auth.currentUser;
-            const link = `https://dailychallenges.app/invite?uid=${user.uid}`;
+    await setDoc(myFriendRef, { addedAt: Date.now() });
+    await setDoc(theirFriendRef, { addedAt: Date.now() }); // amistad mutua (opcional)
+  };
 
-            await Share.share({
-            message: `¡Agrega a tu amigo en DailyChallenges! 📲 Usa este enlace para añadirme: ${link}`,
-            });
-        } catch (error) {
-            console.log('Error sharing link:', error);
-        }
-    };
+  // 📋 Cargar lista de amigos
+  useEffect(() => {
+    if (!userId || !isFocused) return;
 
+    const friendsRef = collection(firestore, 'users', userId, 'friends');
+    const unsubscribe = onSnapshot(friendsRef, (snapshot) => {
+      const ids = snapshot.docs.map((doc) => doc.id);
+      setFriendIds(ids);
+      setLoading(false);
+    });
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate('FriendProfile', { userId: item.id })}
-    >
-      <Avatar.Icon icon="account" size={48} style={{ backgroundColor: '#36a2c1' }} />
-      <View style={{ marginLeft: 16 }}>
-        <Text style={styles.name}>{item.name || 'Usuario'}</Text>
-        <Text style={styles.points}>{item.stats?.points || 0} puntos</Text>
-      </View>
-    </TouchableOpacity>
-  );
+    return () => unsubscribe();
+  }, [userId, isFocused]);
+
+  const goToFriendProfile = (friendId) => {
+    navigation.navigate('FriendProfile', { friendId });
+  };
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#36a2c1" />
+      <View style={styles.center}>
+        <Text style={styles.loadingText}>Cargando amigos...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={friends}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        ListEmptyComponent={<Text style={styles.emptyText}>No tienes amigos añadidos.</Text>}
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleShare}>
-        <Icon name="whatsapp" size={24} color="#fff" />
-        <Text style={styles.buttonText}>Invitar a amigos por WhatsApp</Text>
+    <View style={{ flex: 1 }}>
+      <TouchableOpacity style={styles.inviteButton} onPress={shareInviteLink}>
+        <Icon name="account-plus" size={22} color="#fff" />
+        <Text style={styles.inviteText}>Invitar amigo por WhatsApp</Text>
       </TouchableOpacity>
+
+      {friendIds.length === 0 ? (
+        <View style={styles.center}>
+          <Text style={styles.noFriendsText}>Aún no has agregado amigos.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={friendIds}
+          keyExtractor={(item) => item}
+          contentContainerStyle={{ padding: 20 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.friendItem}
+              onPress={() => goToFriendProfile(item)}
+            >
+              <Icon name="account-circle" size={32} color="#36a2c1" />
+              <Text style={styles.friendName}>{item}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fafafb',
-    padding: 16,
-  },
-  card: {
+  inviteButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
-    elevation: 2,
+    backgroundColor: '#36a2c1',
+    padding: 12,
+    borderRadius: 20,
+    margin: 16,
+    justifyContent: 'center',
   },
-  name: {
+  inviteText: {
+    color: '#fff',
+    marginLeft: 8,
+    fontWeight: '600',
     fontSize: 16,
+  },
+  friendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  friendName: {
+    fontSize: 16,
+    marginLeft: 12,
     fontWeight: '600',
     color: '#333',
   },
-  points: {
-    fontSize: 14,
-    color: '#666',
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#888',
-    marginTop: 30,
-    fontStyle: 'italic',
-  },
-  button: {
-    backgroundColor: '#36a2c1',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 14,
-    borderRadius: 16,
-    marginTop: 20,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 10,
-    fontSize: 16,
-  },
-  centered: {
+  center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    color: '#36a2c1',
+    fontSize: 16,
+  },
+  noFriendsText: {
+    fontSize: 16,
+    color: '#999',
+    fontStyle: 'italic',
   },
 });
 

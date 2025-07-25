@@ -18,7 +18,7 @@ import ChallengesCompletedScreen from './Screens/Tabs/ChallengesScreen/Challenge
 import ProfileScreen from './Screens/ProfileScreen';
 import PurchaseScreen from './Screens/PurchaseScreen';
 import FriendProfileScreen from './Screens/Tabs/FriendsAndGroupsScreen/Friends/FriendProfileScreen';
-import GroupRankingScreen from './Screens/Tabs/FriendsAndGroupsScreen/Groups/GroupRankingScreen';
+/*import GroupRankingScreen from './Screens/Tabs/FriendsAndGroupsScreen/Groups/GroupRankingScreen';*/
 
 
 import subirRetos from './Screens/subirRetos';
@@ -107,11 +107,6 @@ export default function App() {
             <Stack.Screen
               name="FriendProfile"
               component={FriendProfileScreen}
-              options={{ headerShown: true, title: 'Ayuda' }}
-            />
-            <Stack.Screen
-              name="GroupRanking"
-              component={GroupRankingScreen}
               options={{ headerShown: true, title: 'Ayuda' }}
             />
            <Stack.Screen name="ChallengesDetail" component={ChallengesDetailScreen} />

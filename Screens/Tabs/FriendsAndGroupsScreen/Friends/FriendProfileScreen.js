@@ -1,160 +1,171 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { Avatar, Button } from 'react-native-paper';
-import { doc, getDoc } from 'firebase/firestore';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  TouchableOpacity,
+} from 'react-native';
+import { ActivityIndicator, Avatar } from 'react-native-paper';
 import { firestore } from '../../../../firebase';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 
 const FriendProfileScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { userId } = route.params;
-
-  const [friendData, setFriendData] = useState(null);
+  const [level, setLevel] = useState(0);
+  const [points, setPoints] = useState(0);
+  const [maxLevel, setMaxLevel] = useState(0);
+  const [maxPoints, setMaxPoints] = useState(0);
+  const [medals, setMedals] = useState([]);
+  const [weeklyPoints, setWeeklyPoints] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const route = useRoute();
+  const navigation = useNavigation();
+  const { friendId } = route.params;
+
   useEffect(() => {
-    const fetchFriendData = async () => {
-      try {
-        const docRef = doc(firestore, 'users', userId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setFriendData(docSnap.data());
-        } else {
-          console.log('No such user!');
-        }
-      } catch (error) {
-        console.error('Error loading friend profile:', error);
-      } finally {
-        setLoading(false);
+    const statsDocRef = doc(firestore, 'users', friendId, 'stats', 'daily');
+    const historyDocRef = doc(firestore, 'users', friendId, 'stats', 'historical');
+
+    const unsubscribeStats = onSnapshot(statsDocRef, (docSnap) => {
+      const data = docSnap.data();
+      if (docSnap.exists() && data) {
+        setLevel(data.level ?? 0);
+        setPoints(data.points ?? 0);
       }
+    });
+
+    const fetchHistorical = async () => {
+      const docSnap = await getDoc(historyDocRef);
+      const data = docSnap.data();
+
+      if (docSnap.exists() && data) {
+        setMaxLevel(data.maxLevel ?? 0);
+        setMaxPoints(data.maxPoints ?? 0);
+        setMedals(Array.isArray(data.medals) ? data.medals : []);
+        if (data.weeklyPoints) {
+          const now = new Date();
+          let total = 0;
+          for (let i = 0; i < 7; i++) {
+            const date = new Date(now);
+            date.setDate(now.getDate() - i);
+            const key = date.toISOString().slice(0, 10);
+            total += data.weeklyPoints[key] ?? 0;
+          }
+          setWeeklyPoints(total);
+        } else {
+          setWeeklyPoints(0);
+        }
+      }
+      setLoading(false);
     };
 
-    fetchFriendData();
-  }, [userId]);
+    fetchHistorical();
+
+    return () => unsubscribeStats();
+  }, [friendId]);
 
   if (loading) {
     return (
-      <View style={styles.centered}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#36a2c1" />
       </View>
     );
   }
 
-  if (!friendData) {
-    return (
-      <View style={styles.centered}>
-        <Text>No se encontró el perfil.</Text>
-        <Button mode="contained" onPress={() => navigation.goBack()} style={{ marginTop: 20 }}>
-          Volver
-        </Button>
-      </View>
-    );
-  }
-
-  const {
-    name = 'Usuario',
-    stats = {},
-    medals = [],
-  } = friendData;
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <Avatar.Icon size={96} icon="account" style={{ backgroundColor: '#36a2c1' }} />
-        <Text style={styles.name}>{name}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.title}>Nivel máximo histórico</Text>
-        <Text style={styles.value}>{stats.maxLevel || 0}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.title}>Puntos totales</Text>
-        <Text style={styles.value}>{stats.points || 0}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.title}>Medallas obtenidas</Text>
-        {medals.length === 0 ? (
-          <Text style={styles.noMedalsText}>No ha obtenido medallas todavía.</Text>
-        ) : (
-          medals.map((medal, i) => (
-            <View key={i} style={styles.medalContainer}>
-              <Avatar.Icon
-                icon={medal.icon || 'star'}
-                size={48}
-                style={{ backgroundColor: '#c2ce51', marginRight: 16 }}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.medalName}>{medal.name}</Text>
-                <Text style={styles.medalDesc}>{medal.description}</Text>
+       <SafeAreaView style={{ flex: 1, backgroundColor: '#fafafb' }}>
+        <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              <Icon name="arrow-left" size={24} color="#36a2c1" />
+              <Text style={styles.backButtonText}>Volver</Text>
+            </TouchableOpacity>
+            <Text style={styles.title}>Perfil Amigo</Text>
+          </View>
+      
+          {/* Avatar */}
+          <View style={[styles.card, styles.centered]}>
+            <Avatar.Icon size={90} icon="account-circle" style={styles.avatar} color="#fff" />
+          </View>
+      
+          {/* Datos actuales */}
+          <View style={styles.rowCards}>
+            <View style={styles.statCard}>
+              <Icon name="star" size={28} color="#f2b01e" />
+              <Text style={styles.statLabel}>Puntos actuales</Text>
+              <Text style={styles.statValue}>{points}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Icon name="shield-star" size={28} color="#5da456" />
+              <Text style={styles.statLabel}>Nivel actual</Text>
+              <Text style={styles.statValue}>{level}</Text>
+            </View>
+          </View>
+      
+          {/* Históricos */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Historial Máximo</Text>
+            <View style={styles.rowCards}>
+              <View style={styles.statCard}>
+                <Icon name="trophy" size={28} color="#c2ce51" />
+                <Text style={styles.statLabel}>Máx. nivel</Text>
+                <Text style={styles.statValue}>{maxLevel}</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Icon name="chart-line" size={28} color="#44c4d2" />
+                <Text style={styles.statLabel}>Máx. puntos</Text>
+                <Text style={styles.statValue}>{maxPoints}</Text>
               </View>
             </View>
-          ))
-        )}
-      </View>
-
-      <Button mode="outlined" onPress={() => navigation.goBack()} style={{ marginTop: 20 }}>
-        Volver
-      </Button>
-    </ScrollView>
-  );
+          </View>
+      
+          {/* Medallas */}
+          <FlatList
+            data={medals}
+            horizontal
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.medalItem}>
+                <Icon name="medal" size={26} color="#fff" />
+                <View style={{ marginLeft: 8 }}>
+                  <Text style={styles.medalText}>{item.title}</Text>
+                  <Text style={styles.medalDesc}>{item.description}</Text>
+                </View>
+              </View>
+            )}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingVertical: 10 }}
+          />
+      
+      
+          {/* Puntos semanales */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Puntos esta semana</Text>
+            <Text style={[styles.value, { fontSize: 38 }]}>{weeklyPoints}</Text>
+          </View>
+        </ScrollView>
+        </SafeAreaView>
+        );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    backgroundColor: '#fafafb',
-    minHeight: '100%',
-  },
+  container: { flex: 1, padding: 20, backgroundColor: '#fafafb' },
   header: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginTop: 12,
-    color: '#333',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#36a2c1',
-    marginBottom: 8,
-  },
-  value: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#444',
-  },
-  noMedalsText: {
-    fontStyle: 'italic',
-    color: '#999',
-  },
-  medalContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    backgroundColor: 'rgba(194, 206, 81, 0.15)',
-    borderRadius: 12,
-    padding: 12,
+    marginBottom: 20,
   },
-  medalName: {
-    fontWeight: '600',
-    fontSize: 16,
-    color: '#555',
+  title: {
+    marginLeft: 10,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#36a2c1',
   },
-  medalDesc: {
-    fontSize: 14,
-    color: '#666',
-  },
-  centered: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
